@@ -1,0 +1,801 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>FloraScan – A QR-Based Plant Discovery System</title>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@300;400;600;700&family=Outfit:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --forest: #1B5E20;
+    --leaf: #4CAF50;
+    --leaf-light: #81C784;
+    --cream: #F5F7F4;
+    --charcoal: #222222;
+    --white: #ffffff;
+    --glass: rgba(255,255,255,0.08);
+    --glass-border: rgba(255,255,255,0.18);
+  }
+  *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+  body { font-family: 'Outfit', sans-serif; background: var(--cream); color: var(--charcoal); overflow-x: hidden; }
+
+  /* NAV */
+  nav {
+    position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+    padding: 1.1rem 2rem;
+    display: flex; justify-content: space-between; align-items: center;
+    background: rgba(27,94,32,0.88); backdrop-filter: blur(14px);
+    border-bottom: 1px solid var(--glass-border);
+  }
+  .nav-brand { display: flex; align-items: center; gap: .55rem; color: var(--white); font-weight: 600; font-size: 1.05rem; letter-spacing: .04em; text-decoration: none; }
+  .nav-links { display: flex; gap: 1.8rem; align-items: center; }
+  .nav-links a { color: rgba(255,255,255,0.8); text-decoration: none; font-size: .88rem; transition: color .2s; }
+  .nav-links a:hover { color: var(--leaf-light); }
+  .nav-cta { background: var(--leaf); color: #fff; border: none; padding: .5rem 1.3rem; border-radius: 50px; font-size: .85rem; font-weight: 500; cursor: pointer; text-decoration: none; transition: background .25s, transform .2s; }
+  .nav-cta:hover { background: var(--leaf-light); transform: translateY(-1px); }
+  @media(max-width:700px){ .nav-links { display: none; } }
+
+  /* HERO */
+  .hero {
+    min-height: 100vh;
+    background:
+      linear-gradient(160deg, rgba(10,40,10,0.82) 0%, rgba(27,94,32,0.58) 55%, rgba(0,0,0,0.45) 100%),
+      url('assets/images/Rose Background.jpg') center/cover no-repeat;
+    display: flex; flex-direction: column; justify-content: center; align-items: center;
+    text-align: center; padding: 8rem 1.5rem 5rem; position: relative; overflow: hidden;
+  }
+  .hero-badge { display: inline-flex; align-items: center; gap: .45rem; background: rgba(76,175,80,0.2); border: 1px solid rgba(76,175,80,0.4); color: var(--leaf-light); font-size: .75rem; letter-spacing: .12em; text-transform: uppercase; padding: .4rem 1rem; border-radius: 50px; margin-bottom: 1.8rem; animation: fadeUp .7s ease both; }
+  .hero h1 { font-family: 'Cormorant Garamond', serif; font-size: clamp(2.6rem, 7vw, 5.2rem); font-weight: 700; color: var(--white); line-height: 1.1; max-width: 820px; margin-bottom: 1.4rem; animation: fadeUp .7s .15s ease both; }
+  .hero h1 span { color: var(--leaf-light); }
+  .hero p { font-size: clamp(.95rem, 2.2vw, 1.15rem); color: rgba(255,255,255,0.82); max-width: 580px; line-height: 1.75; margin-bottom: 1.6rem; animation: fadeUp .7s .3s ease both; }
+
+  /* HERO STATS BAR */
+  .hero-stats { display: flex; gap: 2rem; justify-content: center; flex-wrap: wrap; margin-bottom: 2.4rem; animation: fadeUp .7s .4s ease both; }
+  .hero-stat { display: flex; flex-direction: column; align-items: center; gap: .2rem; }
+  .hero-stat .num { font-family: 'Cormorant Garamond', serif; font-size: 2.2rem; font-weight: 700; color: var(--leaf-light); line-height: 1; }
+  .hero-stat .lbl { font-size: .72rem; color: rgba(255,255,255,0.65); text-transform: uppercase; letter-spacing: .1em; }
+  .hero-stat-div { width: 1px; height: 40px; background: rgba(255,255,255,0.2); align-self: center; }
+
+  .hero-btns { display: flex; gap: 1rem; flex-wrap: wrap; justify-content: center; animation: fadeUp .7s .5s ease both; }
+  .btn-primary { background: linear-gradient(135deg, var(--leaf), var(--forest)); color: #fff; padding: .9rem 2.2rem; border-radius: 50px; font-size: 1rem; font-weight: 500; text-decoration: none; border: none; cursor: pointer; box-shadow: 0 8px 30px rgba(76,175,80,0.4); transition: transform .25s, box-shadow .25s; display: inline-flex; align-items: center; gap: .5rem; }
+  .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 14px 40px rgba(76,175,80,0.5); }
+  .btn-ghost { background: transparent; border: 1px solid rgba(255,255,255,0.35); color: #fff; padding: .9rem 2rem; border-radius: 50px; font-size: .95rem; text-decoration: none; transition: background .25s; }
+  .btn-ghost:hover { background: rgba(255,255,255,0.1); }
+  .scroll-arrow { position: absolute; bottom: 2.5rem; left: 50%; transform: translateX(-50%); display: flex; flex-direction: column; align-items: center; gap: .3rem; animation: bounce 2s infinite; }
+  .scroll-arrow span { width: 1.5px; height: 28px; background: linear-gradient(to bottom, rgba(255,255,255,0), rgba(255,255,255,0.65)); display: block; }
+
+  /* SECTIONS */
+  section { padding: 6rem 1.5rem; }
+  .container { max-width: 1080px; margin: 0 auto; }
+  .section-tag { display: inline-block; font-size: .72rem; text-transform: uppercase; letter-spacing: .14em; color: var(--leaf); font-weight: 600; margin-bottom: .6rem; }
+  .section-title { font-family: 'Cormorant Garamond', serif; font-size: clamp(2rem, 4.5vw, 3rem); font-weight: 700; line-height: 1.15; margin-bottom: 1rem; }
+  .section-body { font-size: 1.02rem; line-height: 1.85; color: #444; max-width: 700px; }
+
+  /* ABOUT */
+  .about-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 4rem; align-items: center; }
+  .about-visual { position: relative; border-radius: 24px; overflow: hidden; box-shadow: 0 30px 70px rgba(27,94,32,0.18); aspect-ratio: 4/5; }
+  .about-visual img { width: 100%; height: 100%; object-fit: cover; }
+  .about-visual::after { content: ''; position: absolute; inset: 0; background: linear-gradient(180deg, transparent 50%, rgba(27,94,32,0.65) 100%); }
+  .about-badge-overlap { position: absolute; bottom: 1.5rem; left: 1.5rem; right: 1.5rem; z-index: 2; background: rgba(255,255,255,0.1); backdrop-filter: blur(12px); border: 1px solid rgba(255,255,255,0.2); border-radius: 14px; padding: 1rem 1.2rem; color: #fff; font-size: .88rem; }
+  .about-badge-overlap strong { font-size: .97rem; display: block; margin-bottom: .2rem; }
+  @media(max-width:768px){ .about-grid{grid-template-columns:1fr;gap:2rem} .about-visual{aspect-ratio:16/9} }
+
+  /* HOW IT WORKS */
+  .how { background: #fff; }
+  .steps-grid { display: grid; grid-template-columns: repeat(3,1fr); gap: 1.8rem; margin-top: 3rem; }
+  .step-card { background: var(--cream); border-radius: 20px; padding: 2.4rem 2rem; position: relative; overflow: hidden; border: 1px solid rgba(76,175,80,0.12); transition: transform .3s, box-shadow .3s; }
+  .step-card:hover { transform: translateY(-6px); box-shadow: 0 20px 50px rgba(27,94,32,0.12); }
+  .step-num { font-family:'Cormorant Garamond',serif; font-size:5rem; font-weight:700; color:rgba(76,175,80,0.1); position:absolute; top:-1rem; right:1rem; line-height:1; user-select:none; }
+  .step-icon { width:56px; height:56px; border-radius:16px; background:linear-gradient(135deg,var(--leaf),var(--forest)); display:flex; align-items:center; justify-content:center; margin-bottom:1.4rem; box-shadow:0 8px 20px rgba(76,175,80,0.3); }
+  .step-icon svg { width:26px; height:26px; stroke:#fff; fill:none; stroke-width:1.8; stroke-linecap:round; stroke-linejoin:round; }
+  .step-card h3 { font-size:1.1rem; font-weight:600; margin-bottom:.6rem; }
+  .step-card p { font-size:.9rem; color:#555; line-height:1.65; }
+  @media(max-width:768px){ .steps-grid{grid-template-columns:1fr} }
+
+  /* PLANTS SHOWCASE */
+  .plants-section { background: var(--cream); }
+  .plants-count-banner {
+    background: linear-gradient(135deg, var(--forest), #2E7D32);
+    border-radius: 24px; padding: 3rem 2.5rem;
+    display: flex; align-items: center; justify-content: space-between;
+    gap: 2rem; flex-wrap: wrap; margin-bottom: 3rem;
+    box-shadow: 0 20px 60px rgba(27,94,32,0.2);
+  }
+  .plants-count-banner .big-num { font-family: 'Cormorant Garamond', serif; font-size: 6rem; font-weight: 700; color: var(--leaf-light); line-height: 1; }
+  .plants-count-banner .banner-text h3 { font-size: 1.6rem; font-weight: 600; color: #fff; margin-bottom: .5rem; }
+  .plants-count-banner .banner-text p { color: rgba(255,255,255,0.75); font-size: .95rem; line-height: 1.65; max-width: 420px; }
+  .plants-count-banner .banner-cta { background: rgba(255,255,255,0.15); border: 1px solid rgba(255,255,255,0.25); color: #fff; padding: .8rem 1.8rem; border-radius: 50px; text-decoration: none; font-size: .9rem; transition: background .25s; white-space: nowrap; }
+  .plants-count-banner .banner-cta:hover { background: rgba(255,255,255,0.25); }
+
+  .plants-grid { display: grid; grid-template-columns: repeat(4,1fr); gap: 1rem; }
+  .plant-pill {
+    background: #fff; border: 1px solid rgba(76,175,80,0.15);
+    border-radius: 12px; padding: .85rem 1.1rem;
+    font-size: .88rem; font-weight: 500; color: var(--charcoal);
+    display: flex; align-items: center; gap: .6rem;
+    transition: transform .25s, box-shadow .25s, border-color .25s;
+    cursor: default;
+  }
+  .plant-pill:hover { transform: translateY(-3px); box-shadow: 0 10px 28px rgba(27,94,32,0.1); border-color: var(--leaf); }
+  .plant-pill .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--leaf); flex-shrink: 0; }
+  @media(max-width:768px){ .plants-grid{grid-template-columns:repeat(2,1fr)} }
+  @media(max-width:480px){ .plants-grid{grid-template-columns:1fr} }
+
+  /* AI AUDIO SECTION */
+  .audio-section {
+    background: linear-gradient(145deg, #0a2a0e 0%, #1B5E20 50%, #0D3B12 100%);
+    position: relative; overflow: hidden;
+  }
+  .audio-section::before {
+    content: '';
+    position: absolute; top: -100px; right: -100px;
+    width: 500px; height: 500px; border-radius: 50%;
+    background: radial-gradient(circle, rgba(76,175,80,0.12), transparent 70%);
+    pointer-events: none;
+  }
+  .audio-section::after {
+    content: '';
+    position: absolute; bottom: -80px; left: -80px;
+    width: 350px; height: 350px; border-radius: 50%;
+    background: radial-gradient(circle, rgba(76,175,80,0.08), transparent 70%);
+    pointer-events: none;
+  }
+  .audio-inner { position: relative; z-index: 1; }
+  .audio-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 4rem; align-items: center; }
+  .audio-left .section-title { color: #fff; }
+  .audio-left .section-tag { color: var(--leaf-light); }
+  .audio-left .section-body { color: rgba(255,255,255,0.78); margin-bottom: 2rem; }
+
+  .audio-card {
+    background: var(--glass); backdrop-filter: blur(16px);
+    border: 1px solid var(--glass-border); border-radius: 20px;
+    padding: 1.8rem 2rem; margin-bottom: 1rem;
+    display: flex; align-items: center; gap: 1.2rem;
+    transition: background .25s;
+  }
+  .audio-card:hover { background: rgba(255,255,255,0.12); }
+  .audio-play-btn {
+    width: 50px; height: 50px; border-radius: 50%;
+    background: linear-gradient(135deg, var(--leaf), var(--forest));
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0; box-shadow: 0 6px 20px rgba(76,175,80,0.4);
+    cursor: pointer; transition: transform .2s;
+  }
+  .audio-play-btn:hover { transform: scale(1.08); }
+  .audio-play-btn svg { width: 20px; height: 20px; fill: #fff; margin-left: 2px; }
+  .audio-card-text { flex: 1; }
+  .audio-card-text .plant-name { font-size: 1rem; font-weight: 600; color: #fff; margin-bottom: .2rem; }
+  .audio-card-text .plant-sub { font-size: .8rem; color: rgba(255,255,255,0.55); }
+  .audio-waveform { display: flex; align-items: center; gap: 3px; }
+  .audio-waveform span { display: block; width: 3px; border-radius: 3px; background: var(--leaf-light); opacity: 0.6; animation: wave 1.2s ease-in-out infinite; }
+  .audio-waveform span:nth-child(1){ height:8px; animation-delay:0s }
+  .audio-waveform span:nth-child(2){ height:16px; animation-delay:.1s }
+  .audio-waveform span:nth-child(3){ height:24px; animation-delay:.2s }
+  .audio-waveform span:nth-child(4){ height:14px; animation-delay:.3s }
+  .audio-waveform span:nth-child(5){ height:20px; animation-delay:.15s }
+  .audio-waveform span:nth-child(6){ height:10px; animation-delay:.25s }
+  .audio-waveform span:nth-child(7){ height:18px; animation-delay:.05s }
+  @keyframes wave { 0%,100%{transform:scaleY(1);opacity:.5} 50%{transform:scaleY(1.5);opacity:1} }
+
+  .elevenlabs-badge {
+    display: inline-flex; align-items: center; gap: .6rem;
+    background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.15);
+    border-radius: 50px; padding: .55rem 1.2rem; margin-top: 1.5rem;
+    color: rgba(255,255,255,0.7); font-size: .82rem;
+  }
+  .elevenlabs-badge strong { color: #fff; }
+
+  .audio-features { display: grid; grid-template-columns: 1fr 1fr; gap: .8rem; margin-top: 1.8rem; }
+  .audio-feat { background: var(--glass); border: 1px solid var(--glass-border); border-radius: 12px; padding: 1rem 1.2rem; }
+  .audio-feat .icon { font-size: 1.4rem; margin-bottom: .4rem; }
+  .audio-feat h4 { font-size: .88rem; font-weight: 600; color: #fff; margin-bottom: .2rem; }
+  .audio-feat p { font-size: .78rem; color: rgba(255,255,255,0.6); line-height: 1.5; }
+
+  @media(max-width:768px){ .audio-grid{grid-template-columns:1fr;gap:2.5rem} .audio-features{grid-template-columns:1fr 1fr} }
+
+  /* TECH STACK */
+  .tech-section { background: #fff; }
+  .tech-intro { display: grid; grid-template-columns: 1fr 1fr; gap: 4rem; align-items: start; margin-bottom: 3.5rem; }
+  @media(max-width:768px){ .tech-intro{grid-template-columns:1fr;gap:1.5rem} }
+
+  .tech-grid { display: grid; grid-template-columns: repeat(3,1fr); gap: 1.4rem; }
+  .tech-card {
+    background: var(--cream); border-radius: 18px; padding: 1.8rem 1.6rem;
+    border: 1px solid rgba(76,175,80,0.1);
+    transition: transform .3s, box-shadow .3s, border-color .3s;
+    position: relative; overflow: hidden;
+  }
+  .tech-card::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px; background: linear-gradient(90deg, var(--leaf), var(--forest)); border-radius: 18px 18px 0 0; opacity: 0; transition: opacity .3s; }
+  .tech-card:hover { transform: translateY(-5px); box-shadow: 0 16px 40px rgba(27,94,32,0.1); border-color: rgba(76,175,80,0.25); }
+  .tech-card:hover::before { opacity: 1; }
+  .tech-logo { font-size: 2rem; margin-bottom: .9rem; }
+  .tech-card h4 { font-size: 1rem; font-weight: 600; margin-bottom: .4rem; }
+  .tech-card .tech-role { font-size: .75rem; text-transform: uppercase; letter-spacing: .1em; color: var(--leaf); font-weight: 600; margin-bottom: .6rem; }
+  .tech-card p { font-size: .85rem; color: #555; line-height: 1.6; }
+
+  .dev-timeline { margin-top: 3.5rem; }
+  .dev-timeline h3 { font-family: 'Cormorant Garamond', serif; font-size: 1.8rem; font-weight: 700; margin-bottom: 2rem; text-align: center; }
+  .timeline { display: flex; flex-direction: column; gap: 0; max-width: 700px; margin: 0 auto; position: relative; }
+  .timeline::before { content: ''; position: absolute; left: 20px; top: 0; bottom: 0; width: 2px; background: linear-gradient(to bottom, var(--leaf), rgba(76,175,80,0.1)); }
+  .tl-item { display: flex; gap: 1.5rem; padding-bottom: 2rem; position: relative; }
+  .tl-dot { width: 42px; height: 42px; border-radius: 50%; background: linear-gradient(135deg, var(--leaf), var(--forest)); display: flex; align-items: center; justify-content: center; flex-shrink: 0; box-shadow: 0 4px 14px rgba(76,175,80,0.3); z-index: 1; font-size: 1rem; }
+  .tl-content { background: var(--cream); border-radius: 14px; padding: 1.2rem 1.5rem; flex: 1; border: 1px solid rgba(76,175,80,0.1); }
+  .tl-content h4 { font-size: .95rem; font-weight: 600; margin-bottom: .3rem; }
+  .tl-content p { font-size: .85rem; color: #555; line-height: 1.6; }
+
+  @media(max-width:768px){ .tech-grid{grid-template-columns:repeat(2,1fr)} }
+  @media(max-width:480px){ .tech-grid{grid-template-columns:1fr} }
+
+  /* WHY */
+  .why { background: linear-gradient(135deg, var(--forest) 0%, #2E7D32 100%); color: var(--white); position: relative; overflow: hidden; }
+  .why::before { content: ''; position: absolute; top: -80px; right: -80px; width: 400px; height: 400px; border-radius: 50%; background: rgba(76,175,80,0.12); pointer-events: none; }
+  .why .section-title { color: #fff; }
+  .why .section-tag { color: var(--leaf-light); }
+  .why .section-body { color: rgba(255,255,255,0.82); max-width: 600px; margin-bottom: 2.5rem; }
+  .why-grid { display: grid; grid-template-columns: repeat(2,1fr); gap: 1.2rem; margin-top: 2rem; }
+  .why-item { background: var(--glass); backdrop-filter: blur(10px); border: 1px solid var(--glass-border); border-radius: 16px; padding: 1.6rem 1.8rem; display: flex; gap: 1rem; align-items: flex-start; transition: background .25s; }
+  .why-item:hover { background: rgba(255,255,255,0.12); }
+  .why-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--leaf-light); margin-top: .55rem; flex-shrink: 0; }
+  .why-item p { font-size: .95rem; line-height: 1.6; color: rgba(255,255,255,0.88); }
+  @media(max-width:600px){ .why-grid{grid-template-columns:1fr} }
+
+  /* CREATOR */
+.creator { background: var(--cream); }
+.creator-card {
+  max-width: 680px;
+  margin: 3rem auto 0;
+  background: #fff;
+  border-radius: 24px;
+  padding: 2.8rem 3rem;
+  box-shadow: 0 20px 60px rgba(27,94,32,0.1);
+  border: 1px solid rgba(76,175,80,0.12);
+  display: flex;
+  gap: 2.5rem;
+  align-items: center;
+}
+
+.creator-avatar {
+  width: 180px;
+  height: 180px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--leaf-light), var(--forest));
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  overflow: hidden; /* important for image */
+  box-shadow: 0 10px 30px rgba(27,94,32,0.25);
+}
+
+.creator-avatar img{
+  width:100%;
+  height:100%;
+  object-fit:cover;
+  border-radius:50%;
+}
+
+.creator-info h3 { font-size: 1.4rem; font-weight: 600; margin-bottom: .3rem; }
+
+.creator-info .sub { color: var(--leaf); font-size: .85rem; font-weight: 500; margin-bottom: .8rem; }
+
+.creator-info p { font-size: .92rem; color: #555; line-height: 1.7; }
+
+.creator-meta { display: flex; flex-wrap: wrap; gap: .5rem; margin-top: 1rem; }
+
+.tag {
+  background: rgba(76,175,80,0.1);
+  color: var(--forest);
+  border-radius: 50px;
+  font-size: .78rem;
+  padding: .3rem .9rem;
+  font-weight: 500;
+}
+
+@media(max-width:600px){
+  .creator-card{
+    flex-direction:column;
+    text-align:center;
+    padding:2rem 1.5rem
+  }
+  .creator-meta{
+    justify-content:center
+  }
+}
+
+  /* ACK */
+  .ack { background: #fff; }
+  .ack-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; margin-top: 3rem; max-width: 800px; margin-left: auto; margin-right: auto; }
+  .ack-card { background: var(--cream); border-radius: 18px; padding: 2rem 2.2rem; border: 1px solid rgba(76,175,80,0.1); transition: box-shadow .25s, transform .25s; }
+  .ack-card:hover { transform: translateY(-4px); box-shadow: 0 14px 40px rgba(27,94,32,0.1); }
+  .ack-card .quote { font-size: 2rem; color: var(--leaf); line-height: 1; margin-bottom: .6rem; }
+  .ack-card h4 { font-size: 1.1rem; font-weight: 600; margin-bottom: .3rem; }
+  .ack-card .role { font-size: .82rem; color: var(--leaf); font-weight: 500; margin-bottom: .8rem; }
+  .ack-card p { font-size: .9rem; color: #555; line-height: 1.65; }
+  @media(max-width:600px){ .ack-grid{grid-template-columns:1fr} }
+
+  /* CTA */
+  .cta-section { background: linear-gradient(135deg, #0D3B12 0%, var(--forest) 60%, #2E7D32 100%); text-align: center; padding: 7rem 1.5rem; position: relative; overflow: hidden; }
+  .cta-section::before { content: ''; position: absolute; inset: 0; background: radial-gradient(ellipse 60% 70% at 50% 50%, rgba(76,175,80,0.15), transparent); pointer-events: none; }
+  .cta-section h2 { font-family: 'Cormorant Garamond', serif; font-size: clamp(2rem, 5vw, 3.5rem); font-weight: 700; color: #fff; margin-bottom: 1rem; }
+  .cta-section p { color: rgba(255,255,255,0.75); font-size: 1.05rem; margin-bottom: 2.5rem; }
+
+  /* FOOTER */
+  footer { background: var(--charcoal); color: rgba(255,255,255,0.5); text-align: center; padding: 3rem 1.5rem; }
+  .footer-brand { font-family: 'Cormorant Garamond', serif; font-size: 1.5rem; font-weight: 700; color: var(--leaf-light); margin-bottom: .5rem; display: flex; align-items: center; gap: .5rem; justify-content: center; }
+  footer p { font-size: .85rem; line-height: 1.9; }
+  footer .divider { width: 50px; height: 1px; background: rgba(255,255,255,0.12); margin: 1.2rem auto; }
+  footer a { color: var(--leaf-light); text-decoration: none; }
+
+  /* ANIMATIONS */
+  @keyframes fadeUp { from{opacity:0;transform:translateY(24px)} to{opacity:1;transform:translateY(0)} }
+  @keyframes bounce { 0%,100%{transform:translateX(-50%) translateY(0)} 50%{transform:translateX(-50%) translateY(8px)} }
+  .reveal { opacity:0; transform:translateY(32px); transition:opacity .7s ease,transform .7s ease; }
+  .reveal.visible { opacity:1; transform:translateY(0); }
+  .reveal-delay-1 { transition-delay:.12s; }
+  .reveal-delay-2 { transition-delay:.24s; }
+  .reveal-delay-3 { transition-delay:.38s; }
+  .leaf-bg { background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='60' height='60'%3E%3Cellipse cx='30' cy='30' rx='18' ry='9' fill='none' stroke='rgba(76,175,80,0.07)' stroke-width='1' transform='rotate(-20,30,30)'/%3E%3C/svg%3E"); }
+</style>
+</head>
+<body>
+
+<!-- NAV -->
+<nav>
+  <a href="#" class="nav-brand">
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 2a9 9 0 0 1 0 18M12 2C6.5 2 4 7 4 12s2.5 10 8 10"/><path d="M12 6c0 0-3 4-3 8s3 8 3 8"/></svg>
+    FloraScan
+  </a>
+  <div class="nav-links">
+    <a href="#about">About</a>
+    <a href="#plants">Plants</a>
+    <a href="#audio">AI Audio</a>
+    <a href="#tech">Tech</a>
+    <a href="#creator">Creator</a>
+  </div>
+  <a href="https://florascanproject.vercel.app" class="nav-cta" target="_blank">Explore Plants →</a>
+</nav>
+
+<!-- HERO -->
+<section class="hero">
+  <div class="hero-badge">
+    <svg width="10" height="10" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="6"/></svg>
+    Shri Shivaji College, Parbhani
+  </div>
+  <h1>Your Campus is a <span>Living Botanical</span> Library</h1>
+  <p>QR codes placed on plants across the campus reveal fascinating facts about each species  now with AI-powered audio narrated by the plants themselves.</p>
+
+  <div class="hero-stats">
+    <div class="hero-stat">
+      <span class="num">17</span>
+      <span class="lbl">Plant Species</span>
+    </div>
+    <div class="hero-stat-div"></div>
+    <div class="hero-stat">
+      <span class="num">17</span>
+      <span class="lbl">AI Audio Voices</span>
+    </div>
+    <div class="hero-stat-div"></div>
+    <div class="hero-stat">
+      <span class="num">QR</span>
+      <span class="lbl">Campus Tags</span>
+    </div>
+    <div class="hero-stat-div"></div>
+    <div class="hero-stat">
+      <span class="num">∞</span>
+      <span class="lbl">Curiosity</span>
+    </div>
+  </div>
+
+  <div class="hero-btns">
+    <a href="https://florascanproject.vercel.app" class="btn-primary" target="_blank">🌿 Explore the Plant Discovery Website</a>
+    <a href="#about" class="btn-ghost">Learn More</a>
+  </div>
+  <div class="scroll-arrow">
+    <span></span>
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round"><polyline points="6 9 12 15 18 9"/></svg>
+  </div>
+</section>
+
+<!-- ABOUT -->
+<section class="about leaf-bg" id="about">
+  <div class="container">
+    <div class="about-grid">
+      <div class="about-visual">
+        <img src="assets/images/about section image.png" alt="Campus plants" loading="lazy">
+        <div class="about-badge-overlap">
+          <strong>🌱 Campus Biodiversity Initiative</strong>
+          Transforming how students connect with nature
+        </div>
+      </div>
+      <div>
+        <span class="section-tag reveal">About the Project</span>
+        <h2 class="section-title reveal reveal-delay-1">About the FloraScan Project</h2>
+        <p class="section-body reveal reveal-delay-2">
+          FloraScan is a digital initiative designed to transform the campus of Shri Shivaji College, Parbhani into an interactive botanical learning space.<br><br>
+          QR codes are placed on <strong>17 different plants</strong> across the campus. When scanned using a smartphone, these codes direct visitors to a website providing detailed information about each plant species including its scientific name, characteristics, ecological importance, and uses.<br><br>
+          Each plant page also features an <strong>AI-generated audio voice</strong> where the plant narrates its own story, making learning truly immersive and unforgettable.
+        </p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- HOW IT WORKS -->
+<section class="how" id="how">
+  <div class="container" style="text-align:center">
+    <span class="section-tag reveal">Simple Process</span>
+    <h2 class="section-title reveal reveal-delay-1">How It Works</h2>
+    <p class="section-body reveal reveal-delay-2" style="margin:0 auto 0">Discover the plants around your campus in three easy steps.</p>
+    <div class="steps-grid">
+      <div class="step-card reveal">
+        <div class="step-num">01</div>
+        <div class="step-icon">
+          <svg viewBox="0 0 24 24"><path d="M17 8C8 10 5.9 16.17 3.82 19c0 0 1-.17 2-.17.7 0 1.4.08 2 .25C9 17 13 14 17 8z"/><path d="M3.82 19c0 0-1 4 4 4"/></svg>
+        </div>
+        <h3>Find a Plant with a QR Code</h3>
+        <p>Walk around campus and spot any of the 17 plants tagged with a FloraScan QR code label.</p>
+      </div>
+      <div class="step-card reveal reveal-delay-1">
+        <div class="step-num">02</div>
+        <div class="step-icon">
+          <svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><path d="M14 14h.01M18 14h.01M14 18h.01M18 18h.01M21 14v7"/></svg>
+        </div>
+        <h3>Scan the QR Code</h3>
+        <p>Use your smartphone camera or any QR scanner app. No special app needed!</p>
+      </div>
+      <div class="step-card reveal reveal-delay-2">
+        <div class="step-num">03</div>
+        <div class="step-icon">
+          <svg viewBox="0 0 24 24"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>
+        </div>
+        <h3>Read & Listen to the Plant</h3>
+        <p>Get detailed plant info and press play to hear the plant narrate its own story in an AI voice!</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- 17 PLANTS SHOWCASE -->
+<section class="plants-section leaf-bg" id="plants">
+  <div class="container">
+    <span class="section-tag reveal">The Collection</span>
+    <h2 class="section-title reveal reveal-delay-1">17 Plants, 17 Stories</h2>
+
+    <div class="plants-count-banner reveal reveal-delay-2">
+      <div class="big-num">17</div>
+      <div class="banner-text">
+        <h3>Plant Species Documented</h3>
+        <p>Each plant on campus has its own dedicated webpage with full botanical details, ecological importance, medicinal uses, student quick facts, and an AI-generated audio narration.</p>
+      </div>
+      <a href="https://florascanproject.vercel.app" class="banner-cta" target="_blank">Browse All Plants →</a>
+    </div>
+
+    <div class="plants-grid">
+      <div class="plant-pill reveal"><span class="dot"></span>Neem Tree</div>
+      <div class="plant-pill reveal reveal-delay-1"><span class="dot"></span>Siris Tree</div>
+      <div class="plant-pill reveal reveal-delay-2"><span class="dot"></span>Saptaparni Tree</div>
+      <div class="plant-pill reveal reveal-delay-3"><span class="dot"></span>Orchid Tree</div>
+      <div class="plant-pill reveal"><span class="dot"></span>Golden Shower Tree</div>
+      <div class="plant-pill reveal reveal-delay-1"><span class="dot"></span>Kassod Tree</div>
+      <div class="plant-pill reveal reveal-delay-2"><span class="dot"></span>Amla Tree</div>
+      <div class="plant-pill reveal reveal-delay-3"><span class="dot"></span>Weeping Fig Tree</div>
+      <div class="plant-pill reveal"><span class="dot"></span>Curry Leaf Plant</div>
+      <div class="plant-pill reveal reveal-delay-1"><span class="dot"></span>Kadamba Tree</div>
+      <div class="plant-pill reveal reveal-delay-2"><span class="dot"></span>False Ashoka Tree</div>
+      <div class="plant-pill reveal reveal-delay-3"><span class="dot"></span>Damask Rose</div>
+      <div class="plant-pill reveal"><span class="dot"></span>Sandalwood Tree</div>
+      <div class="plant-pill reveal reveal-delay-1"><span class="dot"></span>African Tulip Tree</div>
+      <div class="plant-pill reveal reveal-delay-2"><span class="dot"></span>Teak Tree</div>
+      <div class="plant-pill reveal reveal-delay-3"><span class="dot"></span>Tulsi</div>      <div class="plant-pill reveal"><span class="dot"></span>Coconut Tree</div>    </div>
+  </div>
+</section>
+
+<!-- AI AUDIO SECTION -->
+<section class="audio-section" id="audio">
+  <div class="container audio-inner">
+    <div class="audio-grid">
+      <div class="audio-left">
+        <span class="section-tag reveal">AI-Powered Feature</span>
+        <h2 class="section-title reveal reveal-delay-1">The Plants Speak for Themselves</h2>
+        <p class="section-body reveal reveal-delay-2">
+          Every plant in FloraScan has an AI-generated audio narration — voiced as if the plant itself is speaking directly to you, sharing its own history, characteristics, and ecological importance.<br><br>
+          Instead of just reading facts, you can <strong style="color:#fff">press play and listen</strong> to the Neem Tree tell you about its medicinal powers, or hear the Sandalwood Tree explain its cultural significance in a warm, natural human voice.
+        </p>
+        <div class="elevenlabs-badge reveal reveal-delay-3">
+          🎙️ Powered by &nbsp;<strong>ElevenLabs AI</strong>&nbsp; industry-leading voice synthesis
+        </div>
+        <div class="audio-features reveal reveal-delay-3">
+          <div class="audio-feat">
+            <div class="icon">🎙️</div>
+            <h4>17 Unique Voices</h4>
+            <p>Each plant has its own AI-generated audio track</p>
+          </div>
+          <div class="audio-feat">
+            <div class="icon">🌿</div>
+            <h4>First-Person Narration</h4>
+            <p>The plant speaks as itself personal and immersive</p>
+          </div>
+          <div class="audio-feat">
+            <div class="icon">📱</div>
+            <h4>One Tap to Play</h4>
+            <p>Instantly plays on any smartphone browser</p>
+          </div>
+          <div class="audio-feat">
+            <div class="icon">🔬</div>
+            <h4>Science-Backed Content</h4>
+            <p>Botanical facts, medicinal uses, ecological role</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="reveal reveal-delay-2">
+        <div class="audio-card">
+          <div class="audio-play-btn">
+            <svg viewBox="0 0 24 24"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+          </div>
+          <div class="audio-card-text">
+            <div class="plant-name">🌿 Neem Tree</div>
+            <div class="plant-sub">AI Voice Narration — 38 sec</div>
+          </div>
+          <div class="audio-waveform"><span></span><span></span><span></span><span></span><span></span><span></span><span></span></div>
+        </div>
+        <div class="audio-card">
+          <div class="audio-play-btn">
+            <svg viewBox="0 0 24 24"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+          </div>
+          <div class="audio-card-text">
+            <div class="plant-name">🪵 Sandalwood Tree</div>
+            <div class="plant-sub">AI Voice Narration — 40 sec</div>
+          </div>
+          <div class="audio-waveform"><span></span><span></span><span></span><span></span><span></span><span></span><span></span></div>
+        </div>
+        <div class="audio-card">
+          <div class="audio-play-btn">
+            <svg viewBox="0 0 24 24"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+          </div>
+          <div class="audio-card-text">
+            <div class="plant-name">🌺 Orchid Tree</div>
+            <div class="plant-sub">AI Voice Narration — 33 sec</div>
+          </div>
+          <div class="audio-waveform"><span></span><span></span><span></span><span></span><span></span><span></span><span></span></div>
+        </div>
+        <div class="audio-card">
+          <div class="audio-play-btn">
+            <svg viewBox="0 0 24 24"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+          </div>
+          <div class="audio-card-text">
+            <div class="plant-name">🌹 Damask Rose</div>
+            <div class="plant-sub">AI Voice Narration — 33 sec</div>
+          </div>
+          <div class="audio-waveform"><span></span><span></span><span></span><span></span><span></span><span></span><span></span></div>
+        </div>
+        <p style="text-align:center;color:rgba(255,255,255,0.4);font-size:.8rem;margin-top:1rem">+ 13 more plant voice narrations on the website</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- TECH STACK -->
+<section class="tech-section" id="tech">
+  <div class="container">
+    <div class="tech-intro">
+      <div>
+        <span class="section-tag reveal">Under the Hood</span>
+        <h2 class="section-title reveal reveal-delay-1">How We Built FloraScan</h2>
+      </div>
+      <p class="section-body reveal reveal-delay-2" style="padding-top:1.5rem">
+        FloraScan was built using a modern web development stack combining fast frontend frameworks, structured data management, AI voice synthesis, and cloud deployment to create a seamless experience for students.
+      </p>
+    </div>
+
+    <div class="tech-grid">
+      <div class="tech-card reveal">
+        <div class="tech-logo">⚛️</div>
+        <div class="tech-role">Frontend Framework</div>
+        <h4>React.js</h4>
+        <p>Component-based UI architecture. All 17 plant pages are dynamically rendered from a single template using React Router.</p>
+      </div>
+      <div class="tech-card reveal reveal-delay-1">
+        <div class="tech-logo">⚡</div>
+        <div class="tech-role">Build Tool</div>
+        <h4>Vite</h4>
+        <p>Lightning-fast development server and build tool. Ensures the app loads quickly on mobile after scanning a QR code.</p>
+      </div>
+      <div class="tech-card reveal reveal-delay-2">
+        <div class="tech-logo">🎨</div>
+        <div class="tech-role">Styling</div>
+        <h4>Tailwind CSS</h4>
+        <p>Utility-first CSS framework used to design a clean, consistent, and mobile-responsive UI across all plant pages.</p>
+      </div>
+      <div class="tech-card reveal">
+        <div class="tech-logo">📦</div>
+        <div class="tech-role">Data Management</div>
+        <h4>JSON Data Store</h4>
+        <p>All 17 plant profiles, sections, quizzes, and metadata are stored in a structured file easy to update and expand.</p>
+      </div>
+      <div class="tech-card reveal reveal-delay-1">
+        <div class="tech-logo">🎙️</div>
+        <div class="tech-role">AI Voice Generation</div>
+        <h4>ElevenLabs</h4>
+        <p>Industry leading AI voice synthesis used to generate all 17 plant audio narrations. Each plant speaks in its own unique, natural-sounding AI voice.</p>
+      </div>
+      <div class="tech-card reveal reveal-delay-2">
+        <div class="tech-logo">🚀</div>
+        <div class="tech-role">Deployment</div>
+        <h4>Vercel</h4>
+        <p>The entire application is deployed on Vercel for instant global CDN delivery, ensuring the website loads fast anywhere on campus.</p>
+      </div>
+      <div class="tech-card reveal">
+        <div class="tech-logo">🔗</div>
+        <div class="tech-role">Routing</div>
+        <h4>React Router DOM</h4>
+        <p>Handles navigation between the home page and each individual plant detail page every QR code links directly to a unique plant route.</p>
+      </div>
+      <div class="tech-card reveal reveal-delay-1">
+        <div class="tech-logo">🎯</div>
+        <div class="tech-role">Icons & UI</div>
+        <h4>React Icons + FontAwesome</h4>
+        <p>Provides a rich set of icons used across the plant info sections, navigation, and interactive UI elements.</p>
+      </div>
+      <div class="tech-card reveal reveal-delay-2">
+        <div class="tech-logo">📱</div>
+        <div class="tech-role">Entry Point</div>
+        <h4>QR Codes</h4>
+        <p>Physical QR codes printed on labels and placed on real plants across campus. Scanning them opens the exact plant page instantly.</p>
+      </div>
+    </div>
+
+    <!-- Dev Timeline -->
+    <div class="dev-timeline">
+      <h3 class="reveal">Development Journey</h3>
+      <div class="timeline">
+        <div class="tl-item reveal">
+          <div class="tl-dot">💡</div>
+          <div class="tl-content">
+            <h4>Concept & Research</h4>
+            <p>Identified campus plants, researched botanical data for each species, and designed the project structure and data format.</p>
+          </div>
+        </div>
+        <div class="tl-item reveal reveal-delay-1">
+          <div class="tl-dot">🗄️</div>
+          <div class="tl-content">
+            <h4>Data Creation</h4>
+            <p>Built a comprehensive dataset for all 17 plants covering botanical classification, medicinal uses, ecological role, and student quick facts.</p>
+          </div>
+        </div>
+        <div class="tl-item reveal reveal-delay-2">
+          <div class="tl-dot">⚛️</div>
+          <div class="tl-content">
+            <h4>Frontend Development</h4>
+            <p>Developed the React app with Vite and Tailwind CSS. Built dynamic plant pages, navigation, interactive quizzes, and mobile-first responsive design.</p>
+          </div>
+        </div>
+        <div class="tl-item reveal reveal-delay-3">
+          <div class="tl-dot">🎙️</div>
+          <div class="tl-content">
+            <h4>AI Audio Generation</h4>
+            <p>Used ElevenLabs to generate 17 unique AI voice narrations each scripted as a first person story told by the plant itself.</p>
+          </div>
+        </div>
+        <div class="tl-item reveal">
+          <div class="tl-dot">🚀</div>
+          <div class="tl-content">
+            <h4>Deployment & QR Tagging</h4>
+            <p>Deployed the app on Vercel, generated unique QR codes for all 17 plants, printed them, and placed them on the actual campus plants.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- WHY IT MATTERS -->
+<section class="why" id="why">
+  <div class="container">
+    <span class="section-tag reveal">Impact</span>
+    <h2 class="section-title reveal reveal-delay-1">Why This Project Matters</h2>
+    <p class="section-body reveal reveal-delay-2">
+      Many plant species exist on college campuses, but most students are unaware of their scientific significance and ecological value. FloraScan bridges the gap between nature and technology, turning the campus into a living digital botanical library.
+    </p>
+    <div class="why-grid">
+      <div class="why-item reveal">
+        <div class="why-dot"></div>
+        <p><strong style="color:#fff;display:block;margin-bottom:.3rem">Encourages Environmental Awareness</strong>Students develop a deeper appreciation for the plant life surrounding them every day.</p>
+      </div>
+      <div class="why-item reveal reveal-delay-1">
+        <div class="why-dot"></div>
+        <p><strong style="color:#fff;display:block;margin-bottom:.3rem">Promotes Interactive Learning</strong>AI audio + visual info makes botanical knowledge memorable and truly engaging.</p>
+      </div>
+      <div class="why-item reveal reveal-delay-2">
+        <div class="why-dot"></div>
+        <p><strong style="color:#fff;display:block;margin-bottom:.3rem">Digitizes Campus Biodiversity</strong>Creates a permanent digital record of 17 campus species, accessible to anyone, anytime.</p>
+      </div>
+      <div class="why-item reveal reveal-delay-3">
+        <div class="why-dot"></div>
+        <p><strong style="color:#fff;display:block;margin-bottom:.3rem">Technology Meets Nature</strong>Demonstrates how React, AI, and QR technology can solve real educational challenges.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- CREATOR -->
+<section class="creator" id="creator">
+  <div class="container" style="text-align:center">
+    <span class="section-tag reveal">The Team</span>
+    <h2 class="section-title reveal reveal-delay-1">Project Creator</h2>
+    <div class="creator-card reveal reveal-delay-2">
+      <div class="creator-avatar">
+  <img src="assets/images/jay.jpg" alt="Jay Pramod Shinde">
+      </div>
+      <div class="creator-info">
+        <h3>Jay Pramod Shinde</h3>
+        <div class="sub">BCA – Third Year Student</div>
+        <p>Developed FloraScan as a final year academic project researching 17 campus plants, building the full React web app, generating AI audio with ElevenLabs, and deploying the complete system on Vercel.</p>
+        <div class="creator-meta">
+          <span class="tag">🎓 Department of Computer Science</span>
+          <span class="tag">🏛 Shri Shivaji College, Parbhani</span>
+          <span class="tag">⚛️ React Developer</span>
+          <span class="tag">🎙️ ElevenLabs AI</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ACKNOWLEDGEMENTS -->
+<section class="ack leaf-bg" id="ack">
+  <div class="container" style="text-align:center">
+    <span class="section-tag reveal">Gratitude</span>
+    <h2 class="section-title reveal reveal-delay-1">Acknowledgements</h2>
+    <p class="section-body reveal reveal-delay-2" style="margin:0 auto 2rem">Special thanks to those who made this project possible.</p>
+    <div class="ack-grid">
+      <div class="ack-card reveal reveal-delay-1">
+        <div class="quote">"</div>
+        <h4>Sandip Surve Sir</h4>
+        <div class="role">Professor &amp; Mentor</div>
+        <p>For his tremendous support, guidance, and encouragement throughout the development of this project.</p>
+      </div>
+      <div class="ack-card reveal reveal-delay-2">
+        <div class="quote">"</div>
+        <h4>Vaibhav Pathak Sir</h4>
+        <div class="role">Head of Department, Computer Science</div>
+        <p>For his valuable support and guidance in helping turn this idea into reality.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- CTA -->
+<section class="cta-section">
+  <div class="container">
+    <h2 class="reveal">Start Exploring the Plants</h2>
+    <p class="reveal reveal-delay-1">Curious to explore all 17 plant species with full details, quizzes, and AI audio narrations?</p>
+    <a href="https://florascanproject.vercel.app" class="btn-primary reveal reveal-delay-2" target="_blank" style="display:inline-flex">
+      🌿 Visit the FloraScan Plant Database
+    </a>
+  </div>
+</section>
+
+<!-- FOOTER -->
+<footer>
+  <div class="footer-brand">
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 2a9 9 0 0 1 0 18M12 2C6.5 2 4 7 4 12s2.5 10 8 10"/><path d="M12 6c0 0-3 4-3 8s3 8 3 8"/></svg>
+    FloraScan
+  </div>
+  <p>A QR-Based Plant Discovery System &nbsp;•&nbsp; 17 Plant Species &nbsp;•&nbsp; AI-Powered Audio</p>
+  <div class="divider"></div>
+  <p>Developed as a Final Year Project &nbsp;•&nbsp; Department of Computer Science<br>Shri Shivaji College, Parbhani</p>
+  <p style="margin-top:.6rem">Created by <strong style="color:rgba(255,255,255,0.7)">Jay Pramod Shinde</strong> &nbsp;•&nbsp; Built with ⚛️ React + 🎙️ ElevenLabs + 🚀 Vercel</p>
+  <p style="margin-top:.5rem">🌱 <a href="https://florascanproject.vercel.app" target="_blank">florascanproject.vercel.app</a></p>
+</footer>
+
+<script>
+  const reveals = document.querySelectorAll('.reveal');
+  const observer = new IntersectionObserver((entries) => {
+    entries.forEach(e => { if(e.isIntersecting) e.target.classList.add('visible'); });
+  }, { threshold: 0.08 });
+  reveals.forEach(r => observer.observe(r));
+</script>
+</body>
+</html>
