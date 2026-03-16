@@ -275,6 +275,39 @@
   border-radius:50%;
 }
 
+.about-visual {
+  width: 100%;
+  max-width: 500px;
+  margin: auto;
+}
+
+.about-visual img {
+  width: 100%;
+  height: auto;
+  object-fit: cover;
+  border-radius: 10px;
+  display: block;
+}
+
+@media (max-width: 992px) {
+  .about-visual {
+    max-width: 420px;
+  }
+}
+@media (max-width: 768px) {
+  .about-visual {
+    max-width: 100%;
+  }
+
+  .about-visual img {
+    border-radius: 8px;
+  }
+}
+@media (max-width: 480px) {
+  .about-visual img {
+    border-radius: 6px;
+  }
+}
 .creator-info h3 { font-size: 1.4rem; font-weight: 600; margin-bottom: .3rem; }
 
 .creator-info .sub { color: var(--leaf); font-size: .85rem; font-weight: 500; margin-bottom: .8rem; }
@@ -401,7 +434,7 @@
 <section class="about leaf-bg" id="about">
   <div class="container">
     <div class="about-grid">
-      <div class="about-visual">
+      <div class="about-visual  " width="400" height="300" >
         <img src="./aboutsectionimage.png" alt="Campus plants" loading="lazy">
         <div class="about-badge-overlap">
           <strong>🌱 Campus Biodiversity Initiative</strong>
